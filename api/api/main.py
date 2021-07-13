@@ -4,10 +4,15 @@ from fastapi import Depends, FastAPI, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session;
 
 
-from database import SessionLocal, engine
-from schemas import UserCreate, User, Feed, FeedCreate
-from crud import get_user_by_email, create_user, get_users, get_user, create_user_feed, get_feeds
-from models import Base
+from .database import SessionLocal, engine
+from .schemas import UserCreate, User, Feed, FeedCreate
+from .crud import get_user_by_email, create_user, get_users, get_user, create_user_feed, get_feeds
+from .models import Base
+
+from bs4 import BeautifulSoup
+import requests
+
+import logging
 
 
 Base.metadata.create_all(bind=engine)
@@ -60,13 +65,18 @@ def read_feeds(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
 
 
 # background task routes
-def write_notification(feed_url: str, message=""):
-    with open("log.txt", mode="w") as email_file:
-        content = f"notification for {email}: {message}"
-        email_file.write(content)
+async def get_feed_items(feed_url: str):
+    page = await requests.get(feed_url)
+
+    logging.info("REQUEST COMPLETED")
+
+    soup = BeautifulSoup(page.content, 'lxml')
+
+    for item in soup.find_all('item'):
+        yield item
 
 
-@app.post("/send-notification/{url}")
+@app.post("/background-tasks/populate-feeds/{url}")
 async def get_feeds(feed_url: str, background_tasks: BackgroundTasks):
-    background_tasks.add_task(write_notification, feed_url, message="some notification")
+    background_tasks.add_task(get_feed_items, feed_url)
     return {"message": "Notification sent in the background"}
