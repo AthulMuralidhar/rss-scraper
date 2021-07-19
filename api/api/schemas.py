@@ -3,18 +3,18 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 
-class FeedBase(BaseModel):
+class FeedItemBase(BaseModel):
     title: str
     description: Optional[str] = None
 
 
-class FeedCreate(FeedBase):
+class FeedItemCreate(FeedItemBase):
     pass
 
 
-class Feed(FeedBase):
+class FeedItem(FeedItemBase):
     id: int
-    owner_id: int
+    user_id: int
 
     class Config:
         orm_mode = True
@@ -32,7 +32,7 @@ class UserCreate(UserBase):
 class User(UserBase):
     id: int
     is_active: bool
-    feeds: List[Feed] = []
+    feed_items: List[FeedItem] = []
 
     class Config:
         orm_mode = True

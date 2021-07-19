@@ -25,7 +25,7 @@ class User(Base):
     hashed_password = Column(String)
     is_active = Column(Boolean, default=True)
 
-    feed_items = relationship("FeedItem", back_populates="owner")
+    feed_items = relationship("FeedItems", back_populates="user")
 
 
 class FeedItemStatusEnum(enum.Enum):
@@ -39,8 +39,8 @@ class FeedItems(Base):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, index=True)
     description = Column(String)
-    owner_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     feed_item_status = Column(Enum(FeedItemStatusEnum),default=FeedItemStatusEnum.unread, index=True)
     time_updated =  Column(DateTime(timezone=True), onupdate=func.now())
 
-    owner = relationship("User", back_populates="feed_items")
+    user = relationship("User", back_populates="feed_items")

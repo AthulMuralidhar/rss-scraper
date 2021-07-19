@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session;
 
 
 from .database import SessionLocal, engine
-from .schemas import UserCreate, User, Feed, FeedCreate
-from .crud import get_user_by_email, create_user, get_users, get_user, create_user_feed, get_feeds
+from .schemas import UserCreate, User, FeedItem, FeedItemCreate
+from .crud import get_user_by_email, create_user_db, get_users, get_user, create_user_feed, get_feeds
 from .models import Base
 
 from bs4 import BeautifulSoup
@@ -30,10 +30,14 @@ def get_db():
 
 @app.post("/users/", response_model=User)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
+    
+    # import ipdb;ipdb.set_trace();
+
     db_user = get_user_by_email(db, email=user.email)
+
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
-    return create_user(db=db, user=user)
+    return create_user_db(db=db, user=user)
 
 
 @app.get("/users/", response_model=List[User])
@@ -50,14 +54,14 @@ def read_user(user_id: int, db: Session = Depends(get_db)):
     return db_user
 
 
-@app.post("/users/{user_id}/feeds/", response_model=Feed)
+@app.post("/users/{user_id}/feeds/", response_model=FeedItem)
 def create_item_for_user(
-    user_id: int, feed: FeedCreate, db: Session = Depends(get_db)
+    user_id: int, feed: FeedItemCreate, db: Session = Depends(get_db)
 ):
     return create_user_feed(db=db, feed=feed, user_id=user_id)
 
 
-@app.get("/feeds/", response_model=List[Feed])
+@app.get("/feeds/", response_model=List[FeedItem])
 def read_feeds(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     feeds = get_feeds(db, skip=skip, limit=limit)
     return feeds
@@ -66,17 +70,17 @@ def read_feeds(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
 
 # background task routes
 async def get_feed_items(feed_url: str):
-    page = await requests.get(feed_url)
+    page = requests.get(feed_url)
 
     logging.info("REQUEST COMPLETED")
 
     soup = BeautifulSoup(page.content, 'lxml')
 
     for item in soup.find_all('item'):
-        yield item
+        print(item)
 
 
 @app.post("/background-tasks/populate-feeds/{url}")
-async def get_feeds(feed_url: str, background_tasks: BackgroundTasks):
+async def populate_feeds(feed_url: str, background_tasks: BackgroundTasks):
     background_tasks.add_task(get_feed_items, feed_url)
     return {"message": "Notification sent in the background"}
