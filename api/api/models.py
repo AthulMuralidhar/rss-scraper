@@ -34,6 +34,10 @@ class FeedItemStatusEnum(enum.Enum):
 
 class FeedItems(Base):
 
+    """
+    i think time updated should be on feeds level and not feed item level
+    """
+
     __tablename__ = "feeditems"
 
     id = Column(Integer, primary_key=True, index=True)

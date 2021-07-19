@@ -1,3 +1,4 @@
+import ipdb
 from sqlalchemy.orm import Session
 
 from .models import User, FeedItems
@@ -34,7 +35,9 @@ def get_feeds(db: Session, skip: int = 0, limit: int = 100):
 
 
 def create_user_feed(db: Session, feed: FeedItemCreate, user_id: int):
-    db_feed = FeedItems(**feed.dict(), user_id=user_id)
+    # ipdb.set_trace()
+    
+    db_feed = FeedItems(**feed, user_id=user_id)
     db.add(db_feed)
     db.commit()
     db.refresh(db_feed)

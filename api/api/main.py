@@ -1,6 +1,7 @@
 from typing import List
 
 from fastapi import Depends, FastAPI, HTTPException, BackgroundTasks
+from fastapi.logger import logging
 from sqlalchemy.orm import Session;
 
 
@@ -12,12 +13,13 @@ from .models import Base
 from bs4 import BeautifulSoup
 import requests
 
-import logging
+import json 
 
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+
 
 # Dependency
 def get_db():
@@ -67,20 +69,27 @@ def read_feeds(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return feeds
 
 
+@app.post("/background-tasks/populate-feeds/{url}")
+async def populate_feeds(feed_url: str, background_tasks: BackgroundTasks):
+    background_tasks.add_task(get_feed_items, feed_url)
+    return {"message": "feed items created"}
+
+
 
 # background task routes
 async def get_feed_items(feed_url: str):
     page = requests.get(feed_url)
 
-    logging.info("REQUEST COMPLETED")
-
-    soup = BeautifulSoup(page.content, 'lxml')
+    soup = BeautifulSoup(page.content, 'lxml')   
+    response = None
 
     for item in soup.find_all('item'):
-        print(item)
-
-
-@app.post("/background-tasks/populate-feeds/{url}")
-async def populate_feeds(feed_url: str, background_tasks: BackgroundTasks):
-    background_tasks.add_task(get_feed_items, feed_url)
-    return {"message": "Notification sent in the background"}
+        feed = {
+            "title": item.title.text,
+            "description": item.description.text,
+        }
+        response = create_user_feed(db=SessionLocal(), feed=feed, user_id=1)
+        
+        logging.info({"added": response})
+    
+    return {"result": "successful"}
