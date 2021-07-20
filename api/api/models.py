@@ -13,8 +13,8 @@ design decisions:
 - folowing is defined by setting a user id on a feed item
 - unfollowing is defined by un setting the user id
 
-
 """
+
 
 class User(Base):
 
@@ -29,22 +29,20 @@ class User(Base):
 
 
 class FeedItemStatusEnum(enum.Enum):
-    read = 'read'
-    unread = 'unread'
+    read = "read"
+    unread = "unread"
+
 
 class FeedItems(Base):
-
-    """
-    i think time updated should be on feeds level and not feed item level
-    """
-
     __tablename__ = "feeditems"
 
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, index=True)
     description = Column(String)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    feed_item_status = Column(Enum(FeedItemStatusEnum),default=FeedItemStatusEnum.unread, index=True)
-    time_updated =  Column(DateTime(timezone=True), onupdate=func.now())
+    feed_item_status = Column(
+        Enum(FeedItemStatusEnum), default=FeedItemStatusEnum.unread, index=True
+    )
+    time_updated = Column(DateTime(timezone=True), onupdate=func.now())
 
     user = relationship("User", back_populates="feed_items")

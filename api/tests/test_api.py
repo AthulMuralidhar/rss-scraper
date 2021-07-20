@@ -6,8 +6,7 @@ import pytest
 from fastapi import BackgroundTasks
 from requests import Response
 
-from api.main import app, get_feed_items
-from unittest.mock import mock_open
+from api.main import app
 
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -15,15 +14,7 @@ from sqlalchemy.orm import sessionmaker
 
 from api.database import Base
 from api.main import app, get_db
-import json
-from api.cron import start_background_tasks
-
-
-"""
-https://stackoverflow.com/questions/58270958/mocking-background-tasks-add-task
-https://fastapi.tiangolo.com/advanced/async-tests/
-https://fastapi.tiangolo.com/advanced/testing-database/
-"""
+from httpx import AsyncClient
 
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
@@ -34,7 +25,6 @@ engine = create_engine(
 )
 
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
 
 
 Base.metadata.create_all(bind=engine)
@@ -51,6 +41,7 @@ def override_get_db():
 app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
 
+
 def test_create_user():
 
     # POST
@@ -65,7 +56,6 @@ def test_create_user():
         assert "id" in data
         user_id = data["id"]
 
-
         # GET
         response = client.get(f"/users/{user_id}")
         assert response.status_code == 200, response.text
@@ -73,15 +63,13 @@ def test_create_user():
         assert data["email"] == "tester@rss.com"
         assert data["id"] == user_id
 
-
     except AssertionError:
-
-        # import ipdb;ipdb.set_trace()
-
         assert response.status_code == 400
-        assert response.json().get('detail') == "Email already registered"
+        assert response.json().get("detail") == "Email already registered"
 
-from httpx import AsyncClient
+
+
+
 
 @pytest.mark.asyncio
 async def test__get_feed_items():
@@ -89,17 +77,6 @@ async def test__get_feed_items():
     
     async with AsyncClient(app=app, base_url="http://127.0.0.1:8000/") as ac:
         response = await ac.post(f"/background-tasks/populate-feeds/{URL}")
-    
+
     assert response.status_code == 200
     assert response.json() == {"message": "feed items created"}
-
-# @pytest.mark.asyncio
-# async def test__start_background_tasks():
-
-def test__start_background_tasks():
-
-    # import ipdb;ipdb.set_trace()
-    
-    result = start_background_tasks()
-
-    assert result
